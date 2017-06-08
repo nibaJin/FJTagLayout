@@ -21,6 +21,7 @@ class ViewController: UIViewController, UICollectionViewDataSource, FJTagCollect
         tagLayout.datasouce = self
         tagLayout.sectionInset = UIEdgeInsets.init(top: 10, left: 10, bottom: 10, right: 10)
         tagLayout.itemHeight = 30
+//        tagLayout.layoutAligned = .FJTagLayoutAlignedRight
         
         self.collectionView.collectionViewLayout = tagLayout
         self.collectionView.reloadData()
@@ -45,7 +46,6 @@ class ViewController: UIViewController, UICollectionViewDataSource, FJTagCollect
     func layoutItemWidth(at indexPath: IndexPath) -> CGFloat {
         let strSize = self.size(self.dataArray[indexPath.row] as NSString, fontSize: 14)
         let itemWidth = strSize.width + 16 + 1
-        print(strSize)
         return itemWidth
     }
     

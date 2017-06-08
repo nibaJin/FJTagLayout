@@ -31,9 +31,9 @@ class FJTagCollectionLayout: UICollectionViewLayout {
     var layoutAligned: FJTagLayoutAligned = .FJTagLayoutAlignedLeft
     
     private var endPoint = CGPoint.init(x: 0, y: 0)
-    private var itemsFrame = [CGRect]()
-    private var attriCacheDic = NSMutableDictionary.init()
-    
+    private var attriCacheDic = [String: AnyObject]()
+    private var itemColums = Set<CGFloat>()
+
     override func prepare() {
         super.prepare()
         self.cacheAttributes() // 缓存布局
@@ -77,7 +77,7 @@ class FJTagCollectionLayout: UICollectionViewLayout {
         let frame: CGRect  = CGRect.init(x: x, y: y, width: width, height: height)
         attr.frame = frame
         
-        self.itemsFrame.append(frame)
+        self.itemColums.insert(frame.origin.y)
         
         return attr
     }
@@ -114,13 +114,13 @@ class FJTagCollectionLayout: UICollectionViewLayout {
             var attrsArray = [UICollectionViewLayoutAttributes]()
             
             for i in 0...sectionNum-1 {
-                if let headerAttr: UICollectionViewLayoutAttributes = self.attriCacheDic.object(forKey: "\(i)_header") as? UICollectionViewLayoutAttributes {
+                if let headerAttr: UICollectionViewLayoutAttributes = self.attriCacheDic["\(i)_header"] as? UICollectionViewLayoutAttributes {
                     if rect.contains(headerAttr.frame) {
                         attrsArray.append(headerAttr)
                     }
                 }
                 
-                if let itemsAttr: [UICollectionViewLayoutAttributes] = self.attriCacheDic.object(forKey: "\(i)") as? [UICollectionViewLayoutAttributes] {
+                if let itemsAttr: [UICollectionViewLayoutAttributes] = self.attriCacheDic["\(i)"] as? [UICollectionViewLayoutAttributes] {
                     for attri in itemsAttr {
                         if rect.contains(attri.frame) {
                             attrsArray.append(attri)
@@ -128,7 +128,7 @@ class FJTagCollectionLayout: UICollectionViewLayout {
                     }
                 }
                 
-                if let footerAttr: UICollectionViewLayoutAttributes = self.attriCacheDic.object(forKey: "\(i)_footer") as? UICollectionViewLayoutAttributes {
+                if let footerAttr: UICollectionViewLayoutAttributes = self.attriCacheDic["\(i)_footer"] as? UICollectionViewLayoutAttributes {
                     if rect.contains(footerAttr.frame) {
                         attrsArray.append(footerAttr)
                     }
@@ -144,7 +144,7 @@ class FJTagCollectionLayout: UICollectionViewLayout {
             for i in 0...sectionNum-1 {
                 // header
                 if let headerAttr = self.layoutAttributesForSupplementaryView(ofKind: elementKindSectionHeader, at: NSIndexPath.init(item: 0, section: i) as IndexPath) {
-                    self.attriCacheDic.setObject(headerAttr, forKey: "\(i)_header" as NSCopying)
+                    self.attriCacheDic["\(i)_header"] = headerAttr
                 }
                 
                 // items
@@ -157,22 +157,42 @@ class FJTagCollectionLayout: UICollectionViewLayout {
                         }
                     }
                     
-//                    switch self.layoutAligned {
-//                    case .FJTagLayoutAlignedMiddle:
-//                        
-//                    case .FJTagLayoutAlignedRight:
-//                        
-//                    default:
-//                        break
-//                    }
-                    self.attriCacheDic.setObject(itemsAttri, forKey: "\(i)" as NSCopying)
+                    switch self.layoutAligned {
+                    case .FJTagLayoutAlignedMiddle:
+                        self.updateItemsLayout(itemsAttri: itemsAttri)
+                    case .FJTagLayoutAlignedRight:
+                        self.updateItemsLayout(itemsAttri: itemsAttri)
+                        break
+                    default:
+                        break
+                    }
+                    self.attriCacheDic["\(i)"] = itemsAttri as AnyObject
                 }
                 
                 // footer
                 if let footerAttr = self.layoutAttributesForSupplementaryView(ofKind: elementKindSectionFooter, at: NSIndexPath.init(item: 0, section: i) as IndexPath) {
-                    self.attriCacheDic.setObject(footerAttr, forKey: "\(i)_footer" as NSCopying)
+                    self.attriCacheDic["\(i)_footer"] = footerAttr
                 }
             }
+        }
+    }
+    
+    func updateItemsLayout(itemsAttri:[UICollectionViewLayoutAttributes]) {
+        for columsY in self.itemColums {
+            var columArray = [UICollectionViewLayoutAttributes]()
+            for itemAtt in itemsAttri {
+                if itemAtt.frame.origin.y == columsY {
+                    columArray.append(itemAtt)
+                }
+            }
+            let starX = self.sectionInset.left
+            
+            let endX = columArray.last!.frame.origin.x + columArray.last!.frame.size.width
+            let offsetX = self.layoutAligned == .FJTagLayoutAlignedMiddle ? (self.collectionView!.frame.width - self.sectionInset.left - self.sectionInset.right - endX + starX) * 0.5 : self.collectionView!.frame.width - self.sectionInset.left - self.sectionInset.right - endX + starX
+            columArray = columArray.map({ (itemAttr: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes in
+                itemAttr.frame.origin.x = itemAttr.frame.origin.x + offsetX
+                return itemAttr
+            })
         }
     }
 }
